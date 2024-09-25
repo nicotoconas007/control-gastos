@@ -1,6 +1,6 @@
 import { categories } from '../data/categories';
 import type { DraftExpense, Value } from '../types';
-import { ChangeEvent, FormEvent, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import DatePicker from 'react-date-picker';
 import 'react-date-picker/dist/DatePicker.css';
 import 'react-calendar/dist/Calendar.css';
@@ -18,7 +18,15 @@ export default function ExpenseForm() {
     })
 
     const [error, setError] = useState('')
-    const { dispatch } = useBudget()
+    const { dispatch, state } = useBudget()
+
+
+    useEffect(() => {
+        if(state.editingId) {
+            const editingExpense = state.expenses.filter( currentExpense => currentExpense.id === state.editingId )[0]
+            setExpense(editingExpense)
+        }
+    }, [state.editingId])
 
     const handleChangeDate = (value : Value) => {
         setExpense({
@@ -45,15 +53,18 @@ export default function ExpenseForm() {
             return
         }
 
-        //Agregar nuevo gasto
-        dispatch({type: "add-expense", payload: {expense}})
-
+        //Agregar o editar nuevo gasto
+        if(state.editingId) {
+            dispatch({type: "update-expense", payload: {expense : {id: state.editingId, ...expense}}})
+        } else {
+            dispatch({type: "add-expense", payload: {expense}})
+        }
     }
 
   return (
     <form className='space-y-5' onSubmit={handleSubmit}>
         <legend className='uppercase text-center text-2xl font-black border-b-4 py-2 border-blue-500'>
-            Nuevo Gasto
+           {!state.editingId ? "Nuevo Gasto" : "Editar Gasto"} 
         </legend>
 
         {error && <ErrorMessage> {error} </ErrorMessage>}
@@ -123,7 +134,7 @@ export default function ExpenseForm() {
         <input 
             type="submit" 
             className='bg-blue-400 cursor-pointer w-full p-2 text-white uppercase font-bold rounded-lg'
-            value={"Registrar gasto"}
+            value={state.editingId ? "Editar Gasto" : "Registrar gasto"}
         />
     </form>
   )
